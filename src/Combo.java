@@ -61,6 +61,11 @@ public class Combo {
 
         int preJokerCount = 0;
 
+        // Initialize colours in set to -1 because I hate java
+        for (int i = 0; i < 4; i++) {
+            coloursInSet[i] = -1;
+        }
+
         // Basically, we find the first non joker piece.
         // Then, on the second non-joker piece, we can determine what type of combo this is
         // From there, we just keep moving on, and if a single piece doesn't fit in then we return invalid

@@ -19,18 +19,21 @@ public class Board {
 
     private final void initializePool() {
         pool = new byte[104];
-        for (int i = 0; i < 13; i++) {
-            for (int j = 0; j < 4; j++) {
-                pool[(i*4)+j] = Piece.makePiece(j, i);
+        for (int twice = 0; twice < 2; twice++) {
+            for (int i = 1; i <= 13; i++) {
+                for (int j = 0; j < 4; j++) {
+                    byte newPiece = Piece.makePiece(j, i);
+                    pool[((i-1)*4)+j + (twice*52)] = newPiece;
+                }
             }
         }
-        pool[103] = Piece.makePiece(Piece.BLACK, Piece.JOKER);
-        pool[104] = Piece.makePiece(Piece.RED, Piece.JOKER);
+
+        pool[102] = Piece.makePiece(Piece.BLACK, Piece.JOKER);
+        pool[103] = Piece.makePiece(Piece.RED, Piece.JOKER);
 
         // Shuffle pieces
         for (int i = 0; i < 104; i++) {
             int newIndex = (int)(Math.random() * (104-i)) + i;
-
             // Swap
             byte temp = pool[newIndex];
             pool[newIndex] = pool[i];
@@ -40,26 +43,27 @@ public class Board {
 
     public boolean makeMove(Move move, Player player) {
         // Make copy of player so that we can undo any illegal moves
-        Player copy = new Player(player.getRack());
+        Player playerCopy = new Player(player.getName(), player.getRack());
+        Board boardCopy = this.copy();
 
         // -1 because indexes are off by 1 because index 0 is the players rack
         // +1 because you can index the size of the array and that will add a new combo
-        // Validate that we are accessing a combo that actuall exists
+        // Validate that we are accessing a combo that actually exists
         if (move.getFromIndex() + 1 > (combos.size() + 1) || move.getFromIndex() < 0)  return false;
         if (move.getToIndex() + 1 > (combos.size() + 1) || move.getToIndex() < 0)    return false;
 
-        // Get the combo that we are taking from
-        ArrayList<Byte> from;
-        if (move.getFromIndex() != 0)   from = combos.get((int)move.getFromIndex()-1);
-        else                            from = player.getRack();
+        // Get the combo that we are taking from. If index 0, we are accessing the players rack
+        if (move.getFromIndex() == 0) {
+            if (!player.getRack().contains(move.getFromPiece())) return false;
+            player.removePiece(move.getFromPiece());
+        } else {
+            ArrayList<Byte> from = combos.get((int)move.getFromIndex()-1);
+            if (!from.contains(move.getFromPiece())) return false;
+            Combo.removeFromCombo(combos, move.getFromIndex()-1, move.getFromPiece());
+        }
 
-        // If this combo doesn't even contain the piece we are looking for, return false.
-        if (!from.contains(move.getFromPiece())) return false;
-
-        Combo.removeFromCombo(combos, move.getFromIndex(), move.getFromPiece());
-
-        // If the moveToIndex is equal to the length, then that means we are adding a new combo (and therefore don't need to do any validation lol)
-        if (move.getToIndex() == combos.size()) {
+        // If moveToIndex is equal to the length, then that means we are adding a new combo (and therefore don't need to do any validation)
+        if (move.getToIndex() == Move.NEW) {
             // No need to validate anything here :)
             ArrayList<Byte> toAdd = new ArrayList<>();
             toAdd.add(move.getFromPiece());
@@ -67,13 +71,20 @@ public class Board {
             return true;
         }
 
-        // Here we are trying to add a piece to an exisiting combo
-        // It must be able to fit in, if it doesn't then this is an invalid move.
-        ArrayList<Byte> to = combos.get(move.getToIndex());
-        Combo.addToCombo(combos, move.getToIndex(), move.getFromPiece());
+        // Otherwise, try to add to existing combo
+        if (Combo.addToCombo(combos, move.getToIndex()-1, move.getFromPiece(), move.isLeft())) return true;
+
+        // Oh, no! Our move is invalid! Set player and board back to the initial state
+        this.combos = boardCopy.combos;
+        player.setRack(playerCopy.getRack());
+        return false;
     }
 
-
+    public void restoreToPreviousState(Board previous) {
+        combos = previous.combos;
+        pool = previous.pool;
+        poolIndex = previous.poolIndex;
+    }
 
     public Board copy() {
         return new Board(combos, pool, poolIndex);
@@ -91,15 +102,26 @@ public class Board {
     }
 
     public String toString() {
+
         StringBuilder sb = new StringBuilder();
-        for (ArrayList<Byte> combo : combos) {
+        sb.append("board: ");
+
+        if (combos.isEmpty()) return sb.toString();
+        for (int i = 0; i < combos.size(); i++) {
+            sb.append(i+1);
+            sb.append(": ");
             sb.append("{");
+
+            ArrayList<Byte> combo = combos.get(i);
             for (Byte b : combo) {
-                sb.append(b.toString());
+                sb.append(Piece.toString(b));
                 sb.append(",");
             }
-            sb.replace(sb.length(), sb.length(), "}, ");
+            sb.setCharAt(sb.length()-1, '}');
+            sb.append(", ");
         }
+
+        sb.setCharAt(sb.length()-2, ' ');
 
         return sb.toString();
     }

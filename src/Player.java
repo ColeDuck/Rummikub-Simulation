@@ -4,15 +4,15 @@ import java.util.Arrays;
 public class Player {
 
     private ArrayList<Byte> rack;
-    int score = 0;
+    private String name;
+    private int score = 0;
 
-    public Player() {
+    public Player(String name) {
+        this.name = name;
         this.rack = new ArrayList<>();
     }
-    public Player(Byte[] rack) {
-        this.rack = new ArrayList<>(Arrays.asList(rack));
-    }
-    public Player(ArrayList<Byte> rack) {
+    public Player(String name, ArrayList<Byte> rack) {
+        this.name = name;
         this.rack = rack;
     }
 
@@ -20,16 +20,24 @@ public class Player {
         return rack;
     }
 
-    boolean hasWon() {
+    public void addScore(int toAdd) {
+        score += toAdd;
+    }
+
+    public boolean hasWon() {
         return rack.isEmpty();
     }
 
-    void addPiece(byte newPiece) {
+    public void addPiece(byte newPiece) {
         rack.add(newPiece);
     }
 
-    void removePiece(int index) {
+    public void removePiece(int index) {
         rack.remove(index);
+    }
+
+    public void resetRack() {
+        rack = new ArrayList<>();
     }
 
     void removePiece(byte pieceType) {
@@ -39,5 +47,37 @@ public class Player {
                 return;
             }
         }
+    }
+
+    public int totalRack() {
+        int sum = 0;
+        for (byte b : rack) {
+            sum += Piece.getValue(b);
+        }
+        return sum;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setRack(ArrayList<Byte> arr) {
+        this.rack = arr;
+    }
+
+    public String getRackString(boolean includeName) {
+        StringBuilder sb = new StringBuilder();
+        if (includeName) {
+            sb.append(name);
+            sb.append("'s ");
+        }
+
+        sb.append("rack: (");
+        for (Byte b : rack) {
+            sb.append(Piece.toString(b));
+            sb.append(",");
+        }
+        sb.setCharAt(sb.length()-1, ')');
+        return sb.toString();
     }
 }

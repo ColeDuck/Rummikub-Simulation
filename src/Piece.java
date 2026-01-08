@@ -35,13 +35,20 @@ public class Piece {
         try {
             value = Integer.parseInt(valueString);
         } catch (Exception e) {
-            return INVALID;
+            if (valueString.equals("J") || valueString.equals("j")) value = Piece.JOKER;
+            else return INVALID;
         }
 
         if (value < 1 || value > 14) return INVALID;
 
+        int colourInt = 0;
+        if (colour == 'b') colourInt = Piece.BLACK;
+        if (colour == 'r') colourInt = Piece.RED;
+        if (colour == 'g') colourInt = Piece.GREEN;
+        if (colour == 'y') colourInt = Piece.YELLOW;
+
         // We have a valid thing :D
-        return makePiece(Integer.parseInt(colour+""), value);
+        return makePiece(colourInt, value);
     }
 
     public static String toString(byte piece) {
@@ -55,10 +62,14 @@ public class Piece {
         // 30 = black, 31 = red, 32 = green, 33 = yellow
         String start = "\u001B[" + (30 + colour) + "m";
 
+        String toReturn;
+
         if (value == JOKER) {
-            return start + "J" + ending;
+            toReturn = start + "J" + ending;
         } else {
-            return start + value + ending;
+            toReturn = start + value + ending;
         }
+
+        return toReturn;
     }
 }
