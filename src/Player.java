@@ -1,11 +1,14 @@
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.stream.Collectors;
 
 public class Player {
 
     private ArrayList<Byte> rack;
     private String name;
     private int score = 0;
+    private SortType lastSort = SortType.NULL;
 
     public Player(String name) {
         this.name = name;
@@ -30,6 +33,7 @@ public class Player {
 
     public void addPiece(byte newPiece) {
         rack.add(newPiece);
+        sortRack(lastSort);
     }
 
     public void removePiece(int index) {
@@ -63,6 +67,34 @@ public class Player {
 
     public void setRack(ArrayList<Byte> arr) {
         this.rack = arr;
+        sortRack(lastSort);
+    }
+
+    public void sortRack(SortType sortType) {
+        lastSort = sortType;
+        Comparator<Byte> colour = (a, b) -> Piece.getColour(a) - Piece.getColour(b);
+        Comparator<Byte> value = ((a,b) -> Piece.getValue(a) - Piece.getValue(b));
+
+        if (sortType == SortType.COLOUR) {
+            rack = new ArrayList<>(rack.stream()
+                    .sorted(colour.thenComparing(value))
+                    .collect(Collectors.toList()));
+
+        } else if (sortType == SortType.VALUE) {
+            rack = new ArrayList<>(rack.stream()
+                    .sorted(value.thenComparing(colour))
+                    .collect(Collectors.toList()));
+
+        }
+    }
+
+    public Player deepCopy() {
+        ArrayList<Byte> cloneRack = new ArrayList<>();
+        for (Byte b : rack) {
+            cloneRack.add(b);
+        }
+
+        return new Player(name, cloneRack);
     }
 
     public String getRackString(boolean includeName) {
@@ -79,5 +111,11 @@ public class Player {
         }
         sb.setCharAt(sb.length()-1, ')');
         return sb.toString();
+    }
+
+    public enum SortType {
+        COLOUR,
+        VALUE,
+        NULL
     }
 }

@@ -44,7 +44,7 @@ public class Board {
     public boolean makeMove(Move move, Player player) {
         // Make copy of player so that we can undo any illegal moves
         Player playerCopy = new Player(player.getName(), player.getRack());
-        Board boardCopy = this.copy();
+        Board boardCopy = this.deepCopy();
 
         // -1 because indexes are off by 1 because index 0 is the players rack
         // +1 because you can index the size of the array and that will add a new combo
@@ -81,13 +81,25 @@ public class Board {
     }
 
     public void restoreToPreviousState(Board previous) {
-        combos = previous.combos;
-        pool = previous.pool;
-        poolIndex = previous.poolIndex;
+        this.combos = previous.combos;
+        this.pool = previous.pool;
+        this.poolIndex = previous.poolIndex;
     }
 
-    public Board copy() {
-        return new Board(combos, pool, poolIndex);
+    public Board deepCopy() {
+        ArrayList<ArrayList<Byte>> cloneCombos = new ArrayList<>();
+        byte[] clonePool = new byte[104];
+
+        for (ArrayList<Byte> combo : combos) {
+            ArrayList<Byte> toClone = new ArrayList<>();
+            for (Byte b : combo) {
+                toClone.add(b);
+            }
+            cloneCombos.add(toClone);
+        }
+
+        System.arraycopy(pool, 0, clonePool, 0, 104);
+        return new Board(cloneCombos, clonePool, poolIndex);
     }
 
     public byte pullFromPool() {

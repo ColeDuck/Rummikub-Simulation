@@ -20,18 +20,20 @@ public final class Game {
         for (int i = 0; i < 14; i++) {
             newPlayer.addPiece(board.pullFromPool());
         }
+
         players.add(newPlayer);
         return true;
     }
 
     public void startGame() {
-        roundCounter = 1;
-        playerTurnCounter = 0;
         if (!getPlayers()) return;
 
         // We have players so now let's do the game!
         while (true) {
-            playRound();
+            roundCounter = 1;
+            playerTurnCounter = 0;
+
+            playGame();
             scorePoints();
 
             for (Player p : players) {
@@ -39,7 +41,7 @@ public final class Game {
             }
 
             board = new Board();
-            System.out.println("Would you like to play another round or exit? Enter \"again\" or \"end\"");
+            System.out.println("Would you like to play another game or exit? Enter \"again\" or \"end\"");
             while (true) {
                 Scanner sc = new Scanner(System.in);
                 String input = sc.nextLine();
@@ -69,42 +71,62 @@ public final class Game {
         }
     }
 
-    private void playRound() {
+    //
+    private void playGame() {
+
+        // You only exit this function at the end of the game
         while (true) {
             Player currentPlayer = players.get(playerTurnCounter);
-            Player copyPlayer = new Player(currentPlayer.getName(), currentPlayer.getRack());
-            Board copyBoard = board.copy();
+            Player turnStartPlayer = currentPlayer.deepCopy();
+            Board turnStartBoard = board.deepCopy();
             int moveCount = 0;
+
+            Player moveStartPlayer;
+            Board moveStartBoard;
 
             // Let them make their move
             while (true) {
+                moveStartPlayer = currentPlayer.deepCopy();
+                moveStartBoard = board.deepCopy();
+
                 pollReturn returned = pollPlayerAndMove();
 
                 if (returned == pollReturn.END) {
                     if (moveCount == 0) {
-                        currentPlayer.addPiece(board.pullFromPool());
+                        byte newPiece = board.pullFromPool();
+                        System.out.println(currentPlayer.getName() + " pulled a " + Piece.toString(newPiece) + " from the pool!");
+                        currentPlayer.addPiece(newPiece);
                     }
+
+                    // We need to validate that the player left the board in a valid state
+                    if (!board.isLegalPosition()) {
+                        System.out.println("You did not leave the board in a valid state.");
+                        currentPlayer.setRack(moveStartPlayer.getRack());
+                        board.restoreToPreviousState(moveStartBoard);
+                        continue;
+                    }
+
                     break;
                 }
 
                 if (returned == pollReturn.RESET) {
-                    board.restoreToPreviousState(copyBoard);
-                    currentPlayer = copyPlayer;
+                    board.restoreToPreviousState(turnStartBoard);
+                    currentPlayer.setRack(turnStartPlayer.getRack());
                     moveCount = 0;
                     continue;
                 }
 
+                if (returned == pollReturn.SORT_COLOUR) currentPlayer.sortRack(Player.SortType.COLOUR);
+                if (returned == pollReturn.SORT_VALUE) currentPlayer.sortRack(Player.SortType.VALUE);
+
                 if (returned == pollReturn.MOVED) {
                     moveCount++;
                 }
-            }
 
-            // We need to validate that the player left the board in a valid state
-            if (!copyBoard.isLegalPosition()) {
-                System.out.println("You did not leave the board in a valid state.");
-                currentPlayer.setRack(copyPlayer.getRack());
-                board.restoreToPreviousState(copyBoard);
-                continue;
+                // Undo the move
+                if (returned == pollReturn.INVALID) {
+                    currentPlayer.setRack(moveStartPlayer.getRack());
+                }
             }
 
             // The players turn is complete, so let's check if they have won
@@ -181,10 +203,14 @@ public final class Game {
         String userMessage = sc.nextLine();
         if (userMessage.equals("help")) {
             System.out.println("To make a move, type it in this format:");
-            System.out.println("move [index] [piece] to [index] [L/R]\nExample: \"move 5 r3 to 9 L\"\nIndex 0 is your rack");
+            System.out.println("move [index] [piece] to [index] [L/R]\nExample: \"move 5 r3 to 9 L\"");
+            System.out.println("To access your rack, type \"rack\" in the first index");
+            System.out.println("To create a new combo, type \"new\" in the second index");
+            System.out.println("L/R is optional, and defaults to left if not specified");
             System.out.println("Type \"reset\" to undo all moves made on your turn");
             System.out.println("Type \"end\" to end your turn");
-            return pollReturn.INVALID;
+            System.out.println("Type \"sort [colour/value]\" to sort your rack");
+            return pollReturn.NOTHING;
         }
 
         if (userMessage.equals("reset")) {
@@ -195,10 +221,17 @@ public final class Game {
             return pollReturn.END;
         }
 
+        String[] split = userMessage.split(" ");
+        if (split.length == 2 && split[0].equals("sort")) {
+            if (split[1].equals("value")) return pollReturn.SORT_VALUE;
+            if (split[1].equals("colour")) return pollReturn.SORT_COLOUR;
+            return pollReturn.NOTHING;
+        }
+
         Move m = Move.createMove(userMessage);
         if (m == null) {
             System.out.println("Invalid move syntax");
-            return pollReturn.INVALID;
+            return pollReturn.NOTHING;
         }
 
         if (!board.makeMove(m, p)) {
@@ -219,7 +252,10 @@ public final class Game {
         RESET,
         END,
         INVALID,
-        MOVED
+        MOVED,
+        SORT_VALUE,
+        SORT_COLOUR,
+        NOTHING
     }
 
 }

@@ -30,7 +30,7 @@ public class Combo {
         if (comboType == INVALID) System.out.println("ERROR: Found invalid combo when it should be impossible");
         if (combo.size() == 2 || comboType == SET) {
             // If we are a double combo or a set, then we can just remove the piece with no fuss
-            combo.remove(piece);
+            combo.remove((Object)piece);
             return;
         }
 
