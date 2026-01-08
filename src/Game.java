@@ -3,14 +3,14 @@ import java.util.Scanner;
 
 public final class Game {
 
-    private ArrayList<Player> players = new ArrayList<>();
+    private ArrayList<Player> players;
     private Board board;
     private int roundCounter;
     private int playerTurnCounter;
 
     public Game() {
         board = new Board();
-        players = new ArrayList<Player>();
+        players = new ArrayList<>();
     }
 
     private boolean addPlayer(String name) {
@@ -92,12 +92,6 @@ public final class Game {
                 pollReturn returned = pollPlayerAndMove();
 
                 if (returned == pollReturn.END) {
-                    if (moveCount == 0) {
-                        byte newPiece = board.pullFromPool();
-                        System.out.println(currentPlayer.getName() + " pulled a " + Piece.toString(newPiece) + " from the pool!");
-                        currentPlayer.addPiece(newPiece);
-                    }
-
                     // We need to validate that the player left the board in a valid state
                     if (!board.isLegalPosition()) {
                         System.out.println("You did not leave the board in a valid state.");
