@@ -106,6 +106,14 @@ public final class Game {
                         continue;
                     }
 
+                    // Legal position, break from while loop
+
+                    if (moveCount == 0) {
+                        byte newPiece = board.pullFromPool();
+                        System.out.println(currentPlayer.getName() + " pulled a " + Piece.toString(newPiece) + " from the pool!");
+                        currentPlayer.addPiece(newPiece);
+                    }
+
                     break;
                 }
 
